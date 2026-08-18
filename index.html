@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Video Game Collection</title>
+<style>
+:root{
+  --bg:#090c11;--panel:#121823;--panel2:#171f2d;--text:#f6f8fc;--muted:#9aa7ba;
+  --line:#273248;--accent:#7eb0ff;--good:#67d4a6;--warn:#f0c36b;--bad:#ff8f8f;--chip:#202a3b
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:linear-gradient(180deg,#080a0e,#0e131c 44%,#090c11);color:var(--text)}
+.wrap{max-width:1600px;margin:0 auto;padding:28px 20px 64px}
+header{display:flex;justify-content:space-between;gap:20px;align-items:flex-end;flex-wrap:wrap;margin-bottom:20px}
+h1{margin:0;font-size:clamp(29px,4vw,46px);letter-spacing:-.035em}
+.sub{color:var(--muted);margin-top:7px}
+.badge{background:var(--panel2);border:1px solid var(--line);border-radius:999px;padding:9px 13px;color:#dce8ff}
+.stats{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;margin:18px 0 22px}
+.stat{background:rgba(18,24,35,.92);border:1px solid var(--line);border-radius:16px;padding:16px}
+.stat .n{font-size:25px;font-weight:780}.stat .k{color:var(--muted);font-size:12px;margin-top:4px}.money{color:var(--good)}
+.controls{display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1fr;gap:10px;margin-bottom:14px}
+input,select{width:100%;border:1px solid var(--line);background:var(--panel);color:var(--text);border-radius:12px;padding:12px 13px;outline:none}
+.tablewrap{overflow-x:auto;overflow-y:visible;background:rgba(18,24,35,.88);border:1px solid var(--line);border-radius:16px}
+table{width:100%;border-collapse:collapse;min-width:1120px;table-layout:auto}
+th,td{padding:12px 13px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+th{position:sticky;top:0;background:#151c29;font-size:11px;color:#bac5d5;text-transform:uppercase;letter-spacing:.05em;cursor:pointer;z-index:2}
+tr.game-row:hover td{background:#141b28}
+.title{font-weight:730;min-width:210px}
+.muted{color:var(--muted);font-size:12px;margin-top:3px}
+.chip{display:inline-block;background:var(--chip);border:1px solid #303c52;border-radius:999px;padding:4px 8px;font-size:12px;white-space:nowrap}
+.grade{color:var(--good);font-weight:760}.value{font-weight:790;white-space:nowrap}.range{white-space:nowrap;color:#d9e3f2}
+.related{color:var(--warn);font-weight:650;min-width:190px;max-width:260px;white-space:normal;overflow-wrap:anywhere}
+.conf{font-weight:720;white-space:nowrap}.conf.High{color:var(--good)}.conf.Medium{color:var(--warn)}.conf.Low{color:var(--bad)}
+a{color:var(--accent);text-decoration:none}a:hover{text-decoration:underline}
+.detail-btn{border:1px solid #34425b;background:#1b2638;color:#dbe8ff;border-radius:9px;padding:7px 10px;cursor:pointer;font-weight:650}
+.detail-btn:hover{background:#22314a}
+.detail-row{display:none}
+.detail-row.open{display:table-row}
+.detail-cell{background:#0e141f;padding:18px 20px}
+.detail-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px 26px}
+.detail-block{min-width:0}
+.detail-label{font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:#7f8ca0;margin-bottom:5px;font-weight:750}
+.detail-text{font-size:13px;line-height:1.5;color:#c7d0de;overflow-wrap:anywhere}
+.status{margin-top:14px;color:var(--muted);font-size:12px}
+.error{padding:16px;border:1px solid #5b2f35;background:#25161a;border-radius:14px;color:#ffc2c2;margin-bottom:12px}
+@media(max-width:1000px){
+  .stats{grid-template-columns:repeat(2,1fr)}
+  .controls{grid-template-columns:1fr 1fr}
+  .controls input{grid-column:1/-1}
+  .detail-grid{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <div>
+    <h1 id="collectionName">Video Game Collection</h1>
+    <div class="sub" id="subtitle">Loading collection…</div>
+  </div>
+  <div class="badge">Local collection dashboard</div>
+</header>
+
+<section class="stats">
+  <div class="stat"><div class="n" id="total">—</div><div class="k">Items shown</div></div>
+  <div class="stat"><div class="n money" id="mid">—</div><div class="k">Estimated midpoint</div></div>
+  <div class="stat"><div class="n" id="low">—</div><div class="k">Low-range total</div></div>
+  <div class="stat"><div class="n" id="high">—</div><div class="k">High-range total</div></div>
+  <div class="stat"><div class="n" id="flagged">—</div><div class="k">Duplicate / related items</div></div>
+</section>
+
+<section class="controls">
+  <input id="q" placeholder="Search title, platform, variant, notes…">
+  <select id="platform"><option value="">All platforms</option></select>
+  <select id="grader"><option value="">All graders</option></select>
+  <select id="confidence"><option value="">All confidence</option><option>High</option><option>Medium</option><option>Low</option></select>
+  <select id="flag"><option value="">All items</option><option value="flagged">Duplicates / related only</option></select>
+</section>
+
+<div id="content">
+  <div class="tablewrap">
+    <table>
+      <thead><tr>
+        <th data-key="title">Game / Item</th>
+        <th data-key="platform">Platform</th>
+        <th data-key="grader">Grader</th>
+        <th data-key="grade">Grade</th>
+        <th data-key="variant">Edition / Variant</th>
+        <th data-key="mid">Est. Value</th>
+        <th>Market Range</th>
+        <th data-key="confidence">Confidence</th>
+        <th>Duplicate / Related</th>
+        <th>Details</th>
+      </tr></thead>
+      <tbody id="rows"></tbody>
+    </table>
+  </div>
+</div>
+
+<div class="status" id="status">Waiting for collection.json…</div>
+</div>
+
+<script>
+let data=[],meta={},sortKey="title",sortDir=1,lastSignature="";
+const $=s=>document.querySelector(s);
+const q=$("#q"),platform=$("#platform"),grader=$("#grader"),confidence=$("#confidence"),flag=$("#flag"),tbody=$("#rows");
+
+function esc(s){return String(s??"").replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function money(n){
+  if(n===null||n===undefined||n==="") return "—";
+  return "$"+Number(n).toLocaleString("en-US",{minimumFractionDigits:0,maximumFractionDigits:2});
+}
+function resetSelect(sel,label,vals){
+  const current=sel.value;
+  sel.innerHTML=`<option value="">${label}</option>`;
+  [...new Set(vals.filter(Boolean))].sort().forEach(v=>{const o=document.createElement("option");o.value=v;o.textContent=v;sel.appendChild(o)});
+  if([...sel.options].some(o=>o.value===current)) sel.value=current;
+}
+function detailsHtml(x){
+  const src=x.source?`<a href="${esc(x.source)}" target="_blank" rel="noopener">Open market source</a>`:"—";
+  return `<div class="detail-grid">
+    <div class="detail-block"><div class="detail-label">Recent Comp / Anchor</div><div class="detail-text">${esc(x.comp||"—")}</div></div>
+    <div class="detail-block"><div class="detail-label">Pricing Basis</div><div class="detail-text">${esc(x.basis||"—")}</div></div>
+    <div class="detail-block"><div class="detail-label">Notes</div><div class="detail-text">${esc(x.notes||"—")}</div></div>
+    <div class="detail-block"><div class="detail-label">Source</div><div class="detail-text">${src}</div></div>
+  </div>`;
+}
+function render(){
+  const needle=q.value.trim().toLowerCase();
+  let rows=data.map((x,i)=>({...x,_idx:i})).filter(x=>{
+    const hay=[x.title,x.platform,x.grader,x.grade,x.variant,x.notes,x.comp,x.basis,x.duplicate,x.shelf].join(" ").toLowerCase();
+    return(!needle||hay.includes(needle))
+      &&(!platform.value||x.platform===platform.value)
+      &&(!grader.value||x.grader===grader.value)
+      &&(!confidence.value||x.confidence===confidence.value)
+      &&(!flag.value||x.duplicate);
+  });
+  rows.sort((a,b)=>{
+    const av=a[sortKey]??"",bv=b[sortKey]??"";
+    if(typeof av==="number"&&typeof bv==="number")return(av-bv)*sortDir;
+    return String(av).localeCompare(String(bv),undefined,{numeric:true})*sortDir;
+  });
+
+  tbody.innerHTML=rows.map(x=>`
+    <tr class="game-row">
+      <td><div class="title">${esc(x.title)}</div><div class="muted">${esc(x.shelf||"")} · ${esc(x.condition||"")}</div></td>
+      <td><span class="chip">${esc(x.platform)}</span></td>
+      <td>${esc(x.grader||"—")}</td>
+      <td class="grade">${esc(x.grade||"—")}</td>
+      <td>${esc(x.variant||"—")}</td>
+      <td class="value">${money(x.mid)}</td>
+      <td class="range">${money(x.low)} – ${money(x.high)}</td>
+      <td><span class="conf ${esc(x.confidence)}">${esc(x.confidence||"—")}</span></td>
+      <td class="related">${esc(x.duplicate||"—")}</td>
+      <td><button class="detail-btn" data-detail="${x._idx}">Details</button></td>
+    </tr>
+    <tr class="detail-row" id="detail-${x._idx}">
+      <td colspan="10" class="detail-cell">${detailsHtml(x)}</td>
+    </tr>`).join("");
+
+  tbody.querySelectorAll(".detail-btn").forEach(btn=>btn.addEventListener("click",()=>{
+    const row=document.getElementById("detail-"+btn.dataset.detail);
+    const opening=!row.classList.contains("open");
+    row.classList.toggle("open");
+    btn.textContent=opening?"Hide":"Details";
+  }));
+
+  $("#total").textContent=rows.length;
+  $("#mid").textContent=money(rows.reduce((s,x)=>s+(+x.mid||0),0));
+  $("#low").textContent=money(rows.reduce((s,x)=>s+(+x.low||0),0));
+  $("#high").textContent=money(rows.reduce((s,x)=>s+(+x.high||0),0));
+  $("#flagged").textContent=rows.filter(x=>x.duplicate).length;
+}
+async function loadCollection(){
+  try{
+    const r=await fetch(`collection.json?ts=${Date.now()}`,{cache:"no-store"});
+    if(!r.ok)throw new Error(`HTTP ${r.status}`);
+    const j=await r.json(),signature=JSON.stringify(j);
+    document.querySelectorAll("#loadError").forEach(e=>e.remove());
+    if(signature!==lastSignature){
+      lastSignature=signature;meta=j;data=Array.isArray(j.items)?j.items:[];
+      $("#collectionName").textContent=j.collection_name||"Video Game Collection";
+      const marketDate=j.market_updated||j.last_updated||"unknown";
+      $("#subtitle").textContent=`Inventory + market valuation · Market data updated ${marketDate}`;
+      resetSelect(platform,"All platforms",data.map(x=>x.platform));
+      resetSelect(grader,"All graders",data.map(x=>x.grader));
+      render();
+      $("#status").textContent=`Loaded ${data.length} items. Auto-checking collection.json every 10 seconds.`;
+    }else{
+      $("#status").textContent=`No changes. Last checked ${new Date().toLocaleTimeString()}.`;
+    }
+  }catch(err){
+    if(!$("#loadError"))$("#content").insertAdjacentHTML("afterbegin",`<div class="error" id="loadError">Could not load collection.json. Make sure both files are in D:\\VideoGameCollection and open the dashboard through http://localhost:8080/.</div>`);
+    $("#status").textContent=`Load error: ${err.message}`;
+  }
+}
+[q,platform,grader,confidence,flag].forEach(el=>el.addEventListener("input",render));
+document.querySelectorAll("th[data-key]").forEach(th=>th.addEventListener("click",()=>{
+  const k=th.dataset.key;if(sortKey===k)sortDir*=-1;else{sortKey=k;sortDir=1}render();
+}));
+loadCollection();setInterval(loadCollection,10000);
+</script>
+</body>
+</html>
