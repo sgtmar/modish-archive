@@ -19,7 +19,7 @@ h1{margin:0;font-size:clamp(29px,4vw,46px);letter-spacing:-.035em}
 .stats{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;margin:18px 0 22px}
 .stat{background:rgba(18,24,35,.92);border:1px solid var(--line);border-radius:16px;padding:16px}
 .stat .n{font-size:25px;font-weight:780}.stat .k{color:var(--muted);font-size:12px;margin-top:4px}.money{color:var(--good)}
-.controls{display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1fr;gap:10px;margin-bottom:14px}
+.controls{display:grid;grid-template-columns:2fr repeat(5,minmax(0,1fr));gap:10px;margin-bottom:14px}
 input,select{width:100%;border:1px solid var(--line);background:var(--panel);color:var(--text);border-radius:12px;padding:12px 13px;outline:none}
 .tablewrap{overflow-x:auto;overflow-y:visible;background:rgba(18,24,35,.88);border:1px solid var(--line);border-radius:16px}
 table{width:100%;border-collapse:collapse;min-width:1120px;table-layout:auto}
@@ -73,8 +73,9 @@ a{color:var(--accent);text-decoration:none}a:hover{text-decoration:underline}
 <section class="controls">
   <input id="q" placeholder="Search title, platform, variant, notes…">
   <select id="platform"><option value="">All platforms</option></select>
+  <select id="shelf"><option value="">All shelves</option></select>
   <select id="grader"><option value="">All graders</option></select>
-  <select id="confidence"><option value="">All confidence</option><option>High</option><option>Medium</option><option>Low</option></select>
+  <select id="confidence"><option value="">All confidence</option><option>High</option><option>Medium</option><option>Low</option><option>Pending</option></select>
   <select id="flag"><option value="">All items</option><option value="flagged">Duplicates / related only</option></select>
 </section>
 
@@ -104,7 +105,7 @@ a{color:var(--accent);text-decoration:none}a:hover{text-decoration:underline}
 <script>
 let data=[],meta={},sortKey="title",sortDir=1,lastSignature="";
 const $=s=>document.querySelector(s);
-const q=$("#q"),platform=$("#platform"),grader=$("#grader"),confidence=$("#confidence"),flag=$("#flag"),tbody=$("#rows");
+const q=$("#q"),platform=$("#platform"),shelf=$("#shelf"),grader=$("#grader"),confidence=$("#confidence"),flag=$("#flag"),tbody=$("#rows");
 
 function esc(s){return String(s??"").replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 function money(n){
@@ -132,6 +133,7 @@ function render(){
     const hay=[x.title,x.platform,x.grader,x.grade,x.variant,x.notes,x.comp,x.basis,x.duplicate,x.shelf].join(" ").toLowerCase();
     return(!needle||hay.includes(needle))
       &&(!platform.value||x.platform===platform.value)
+      &&(!shelf.value||x.shelf===shelf.value)
       &&(!grader.value||x.grader===grader.value)
       &&(!confidence.value||x.confidence===confidence.value)
       &&(!flag.value||x.duplicate);
@@ -184,6 +186,7 @@ async function loadCollection(){
       const marketDate=j.market_updated||j.last_updated||"unknown";
       $("#subtitle").textContent=`Inventory + market valuation · Market data updated ${marketDate}`;
       resetSelect(platform,"All platforms",data.map(x=>x.platform));
+      resetSelect(shelf,"All shelves",data.map(x=>x.shelf));
       resetSelect(grader,"All graders",data.map(x=>x.grader));
       render();
       $("#status").textContent=`Loaded ${data.length} items. Auto-checking collection.json every 10 seconds.`;
@@ -195,7 +198,7 @@ async function loadCollection(){
     $("#status").textContent=`Load error: ${err.message}`;
   }
 }
-[q,platform,grader,confidence,flag].forEach(el=>el.addEventListener("input",render));
+[q,platform,shelf,grader,confidence,flag].forEach(el=>el.addEventListener("input",render));
 document.querySelectorAll("th[data-key]").forEach(th=>th.addEventListener("click",()=>{
   const k=th.dataset.key;if(sortKey===k)sortDir*=-1;else{sortKey=k;sortDir=1}render();
 }));
